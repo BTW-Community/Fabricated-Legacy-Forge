@@ -1,9 +1,9 @@
 package modloader;
 
+import net.minecraft.src.*;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.render.GameRenderer;
 
-public class EntityRendererProxy extends GameRenderer {
+public class EntityRendererProxy extends EntityRenderer {
     private final Minecraft game;
 
     public EntityRendererProxy(Minecraft minecraft) {
@@ -12,8 +12,8 @@ public class EntityRendererProxy extends GameRenderer {
     }
 
     @Override
-    public void method_1331(float f) {
-        super.method_1331(f);
+    public void updateCameraAndRender(float f) {
+        super.updateCameraAndRender(f);
         ModLoader.onTick(f, this.game);
     }
 }

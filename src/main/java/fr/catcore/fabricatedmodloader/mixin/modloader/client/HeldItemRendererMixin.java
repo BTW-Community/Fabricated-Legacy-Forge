@@ -1,19 +1,13 @@
 package fr.catcore.fabricatedmodloader.mixin.modloader.client;
 
-import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.class_1557;
-import net.minecraft.client.class_535;
-import net.minecraft.client.render.Tessellator;
-import net.minecraft.client.render.item.HeldItemRenderer;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.item.ItemStack;
+import net.minecraft.src.*;
 import org.lwjgl.opengl.GL11;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 
-@Mixin(HeldItemRenderer.class)
+@Mixin(ItemRenderer.class)
 public abstract class HeldItemRendererMixin {
 
 //    @Unique
@@ -28,10 +22,10 @@ public abstract class HeldItemRendererMixin {
 //                    ordinal = 0
 //            )
 //    )
-//    private void modLoader$renderfixPart1(MobEntity mobEntity, ItemStack itemStack, int i, CallbackInfo ci) {
-//        if (itemStack.id >= Block.BLOCKS.length) {
-//            this.cachedItemId = itemStack.id;
-//            itemStack.id = 0;
+//    private void modLoader$renderfixPart1(EntityLiving mobEntity, ItemStack itemStack, int i, CallbackInfo ci) {
+//        if (itemStack.itemID >= Block.blocksList.length) {
+//            this.cachedItemId = itemStack.itemID;
+//            itemStack.itemID = 0;
 //        } else {
 //            this.cachedItemId = -1;
 //        }
@@ -42,7 +36,7 @@ public abstract class HeldItemRendererMixin {
 //            at = @At("STORE")
 //    )
 //    private Block modLoader$renderfixPart2(Block value) {
-//        if (this.cachedItemId != -1 && this.cachedItemId >= Block.BLOCKS.length) {
+//        if (this.cachedItemId != -1 && this.cachedItemId >= Block.blocksList.length) {
 //            return null;
 //        }
 //        return value;
@@ -58,51 +52,48 @@ public abstract class HeldItemRendererMixin {
 //                    ordinal = 0
 //            )
 //    )
-//    private void modLoader$renderfixPart2(MobEntity mobEntity, ItemStack itemStack, int i, CallbackInfo ci) {
-//        if (this.cachedItemId != -1 && this.cachedItemId >= Block.BLOCKS.length) {
-//            itemStack.id = this.cachedItemId;
+//    private void modLoader$renderfixPart2(EntityLiving mobEntity, ItemStack itemStack, int i, CallbackInfo ci) {
+//        if (this.cachedItemId != -1 && this.cachedItemId >= Block.blocksList.length) {
+//            itemStack.itemID = this.cachedItemId;
 //        }
 //    }
 
     @Shadow
-    private Minecraft field_1876;
+    private Minecraft mc;
 
     @Shadow
-    private class_535 field_1880;
+    private RenderBlocks renderBlocksInstance;
 
-    @Shadow
-    public static void method_4306(Tessellator tessellator, float f, float g, float h, float i, int j, int k, float l) {
-    }
 
     /**
      * @reason ModLoader patch
      * @author Risugami
      */
-    @Overwrite
-    public void method_1357(MobEntity mobEntity, ItemStack itemStack, int i) {
+    /*@Overwrite
+    public void renderItem(EntityLiving mobEntity, ItemStack itemStack, int i) {
         GL11.glPushMatrix();
         Block block = null;
-        if (itemStack.id < Block.BLOCKS.length) {
-            block = Block.BLOCKS[itemStack.id];
+        if (itemStack.itemID < Block.blocksList.length) {
+            block = Block.blocksList[itemStack.itemID];
         }
 
-        if (itemStack.method_3429() == 0 && block != null && class_535.method_1455(block.getBlockType())) {
-            this.field_1876.field_3813.method_5146("/terrain.png");
-            this.field_1880.method_1447(Block.BLOCKS[itemStack.id], itemStack.getMeta(), 1.0F);
+        if (itemStack.getItemSpriteNumber() == 0 && block != null && RenderBlocks.doesRenderIDRenderItemIn3D(block.getRenderType())) {
+            this.mc.renderEngine.bindTexture("/terrain.png");
+            this.renderBlocksInstance.renderBlockAsItem(Block.blocksList[itemStack.itemID], itemStack.getItemDamage(), 1.0F);
         } else {
-            class_1557 var4 = mobEntity.method_2630(itemStack, i);
+            Icon var4 = mobEntity.getItemIcon(itemStack, i);
             if (var4 == null) {
                 GL11.glPopMatrix();
                 return;
             }
 
-            if (itemStack.method_3429() == 0) {
-                this.field_1876.field_3813.method_5146("/terrain.png");
+            if (itemStack.getItemSpriteNumber() == 0) {
+                this.mc.renderEngine.bindTexture("/terrain.png");
             } else {
-                this.field_1876.field_3813.method_5146("/gui/items.png");
+                this.mc.renderEngine.bindTexture("/gui/items.png");
             }
 
-            Tessellator var5 = Tessellator.INSTANCE;
+            Tessellator var5 = Tessellator.instance;
             float var6 = var4.getMinU();
             float var7 = var4.getMaxU();
             float var8 = var4.getMinV();
@@ -116,11 +107,11 @@ public abstract class HeldItemRendererMixin {
             GL11.glRotatef(50.0F, 0.0F, 1.0F, 0.0F);
             GL11.glRotatef(335.0F, 0.0F, 0.0F, 1.0F);
             GL11.glTranslatef(-0.9375F, -0.0625F, 0.0F);
-            method_4306(var5, var7, var8, var6, var9, var4.method_5349(), var4.method_5350(), 0.0625F);
-            if (itemStack != null && itemStack.hasEnchantmentGlint() && i == 0) {
+            ItemRenderer.renderItemIn2D(var5, var7, var8, var6, var9, var4.getSheetWidth(), var4.getSheetHeight(), 0.0625F);
+            if (itemStack != null && itemStack.isItemEnchanted() && i == 0) {
                 GL11.glDepthFunc(514);
                 GL11.glDisable(2896);
-                this.field_1876.field_3813.method_5146("%blur%/misc/glint.png");
+                this.mc.renderEngine.bindTexture("%blur%/misc/glint.png");
                 GL11.glEnable(3042);
                 GL11.glBlendFunc(768, 1);
                 float var13 = 0.76F;
@@ -129,17 +120,17 @@ public abstract class HeldItemRendererMixin {
                 GL11.glPushMatrix();
                 float var14 = 0.125F;
                 GL11.glScalef(var14, var14, var14);
-                float var15 = (float) (Minecraft.getTime() % 3000L) / 3000.0F * 8.0F;
+                float var15 = (float) (Minecraft.getSystemTime() % 3000L) / 3000.0F * 8.0F;
                 GL11.glTranslatef(var15, 0.0F, 0.0F);
                 GL11.glRotatef(-50.0F, 0.0F, 0.0F, 1.0F);
-                method_4306(var5, 0.0F, 0.0F, 1.0F, 1.0F, 256, 256, 0.0625F);
+                ItemRenderer.renderItemIn2D(var5, 0.0F, 0.0F, 1.0F, 1.0F, 256, 256, 0.0625F);
                 GL11.glPopMatrix();
                 GL11.glPushMatrix();
                 GL11.glScalef(var14, var14, var14);
-                var15 = (float) (Minecraft.getTime() % 4873L) / 4873.0F * 8.0F;
+                var15 = (float) (Minecraft.getSystemTime() % 4873L) / 4873.0F * 8.0F;
                 GL11.glTranslatef(-var15, 0.0F, 0.0F);
                 GL11.glRotatef(10.0F, 0.0F, 0.0F, 1.0F);
-                method_4306(var5, 0.0F, 0.0F, 1.0F, 1.0F, 256, 256, 0.0625F);
+                ItemRenderer.renderItemIn2D(var5, 0.0F, 0.0F, 1.0F, 1.0F, 256, 256, 0.0625F);
                 GL11.glPopMatrix();
                 GL11.glMatrixMode(5888);
                 GL11.glDisable(3042);
@@ -151,5 +142,5 @@ public abstract class HeldItemRendererMixin {
         }
 
         GL11.glPopMatrix();
-    }
+    }*/
 }

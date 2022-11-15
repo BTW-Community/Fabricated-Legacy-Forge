@@ -4,21 +4,22 @@
   "package": "fr.catcore.fabricatedmodloader.mixin",
   "compatibilityLevel": "JAVA_8",
   "mixins": [
+    "modloader.client.RenderManagerAccessor"
   ],
   "client": [
+    "modloader.client.BlockEntityRenderDispatcherAccessor",
+    "modloader.client.class_1528Mixin",
     "modloader.client.class_469Mixin",
+    "modloader.client.class_534Accessor",
     "modloader.client.class_535Mixin",
-    "modloader.client.EntityRenderDispatcherMixin",
+    "modloader.client.MinecraftMixin",
     "modloader.client.HeldItemRendererMixin",
     "modloader.client.IntegratedServerMixin",
     "modloader.client.ItemRendererMixin",
     "modloader.client.PlayerEntityRendererAccessor",
-    "modloader.client.BlockEntityRenderDispatcherAccessor",
-    "modloader.client.class_534Accessor",
     "modloader.client.SoundLoaderMixin",
     "modloader.client.SoundSystemAccessor",
-    "modloader.client.class_1528Mixin",
-
+    "modloader.common.AchievementAccessor",
     "modloader.common.BlockEntityAccessor",
     "modloader.common.CraftingResultSlotMixin",
     "modloader.common.CrashReportMixin",
@@ -28,18 +29,17 @@
     "modloader.common.FurnaceBlockEntityMixin",
     "modloader.common.FurnaceOutputSlotMixin",
     "modloader.common.ItemEntityMixin",
+    "modloader.common.LanguageAccessor",
     "modloader.common.LevelGeneratorTypeMixin",
+    "modloader.common.RecipeDispatcherAccessor",
+    "modloader.common.ServerChunkProviderMixin",
     "modloader.common.ServerPacketListenerMixin",
     "modloader.common.SetBaseBiomesLayerMixin",
+    "modloader.common.StatAccessor",
+    "modloader.common.StatsAccessor",
     "modloader.common.TrackedEntityInstanceMixin",
     "modloader.common.VillagerEntityMixin",
-    "modloader.common.LanguageAccessor",
-    "modloader.common.AchievementAccessor",
-    "modloader.common.StatAccessor",
-    "modloader.common.RecipeDispatcherAccessor",
-    "modloader.common.WeightAccessor",
-    "modloader.common.StatsAccessor",
-    "modloader.common.ServerChunkProviderMixin"
+    "modloader.common.WeightAccessor"
   ],
   "injectors": {
     "defaultRequire": 1

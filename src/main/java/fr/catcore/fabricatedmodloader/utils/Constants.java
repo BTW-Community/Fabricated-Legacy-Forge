@@ -1,7 +1,7 @@
 package fr.catcore.fabricatedmodloader.utils;
 
 import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.impl.util.log.LogCategory;
+import org.apache.logging.log4j.core.LoggerContext;
 
 import java.io.File;
 
@@ -12,8 +12,8 @@ public class Constants {
     public static final File MOD_MAPPINGS_FILE = new File(VERSIONED_FOLDER, "mods_mappings.tiny");
     public static final File REMAPPED_FOLDER = new File(VERSIONED_FOLDER, "mods");
 
-    public static final LogCategory LOG_CATEGORY = new LogCategory("Mod", "FabricatedModLoader");
-    public static final LogCategory MODLOADER_LOG_CATEGORY = new LogCategory("Mod", "FabricatedModLoader", "ModLoader");
+    public static final LoggerContext LOG_CATEGORY = new LoggerContext("Mod", "FabricatedModLoader");
+    public static final LoggerContext MODLOADER_LOG_CATEGORY = new LoggerContext("Mod", "FabricatedModLoader", "ModLoader");
 
     static {
         MAIN_FOLDER.mkdirs();

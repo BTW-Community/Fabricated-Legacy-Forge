@@ -1,15 +1,16 @@
 package fr.catcore.fabricatedmodloader.remapping;
 
+import net.fabricmc.loader.FabricLoaderImpl;
+import net.fabricmc.loader.discovery.RuntimeModRemapper;
 import com.google.common.base.Strings;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.Maps;
 import fr.catcore.fabricatedmodloader.utils.Constants;
 import fr.catcore.fabricatedmodloader.utils.FileUtils;
 import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.impl.launch.FabricLauncher;
-import net.fabricmc.loader.impl.launch.FabricLauncherBase;
-import net.fabricmc.loader.impl.util.log.Log;
-import net.fabricmc.loader.impl.util.mappings.TinyRemapperMappingsHelper;
+import net.fabricmc.loader.launch.common.FabricLauncher;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
+import net.fabricmc.loader.util.mappings.TinyRemapperMappingsHelper;
 import net.fabricmc.mapping.reader.v2.TinyMetadata;
 import net.fabricmc.mapping.tree.*;
 import net.fabricmc.tinyremapper.IMappingProvider;
@@ -18,7 +19,9 @@ import net.fabricmc.tinyremapper.TinyRemapper;
 import org.objectweb.asm.Type;
 
 import java.io.*;
+import java.lang.reflect.Method;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
@@ -40,6 +43,7 @@ public class RemapUtil {
         if (to.toFile().exists()) return;
         Log.info(Constants.LOG_CATEGORY, "Remapping mod " + from.getFileName());
         TinyRemapper remapper = makeRemapper(MINECRAFT_TREE, LOADER_TREE, MODS_TREE);
+        //TinyRemapper remapper = makeRemapper(LOADER_TREE, MODS_TREE);
         remapFile(remapper, from, to);
         Log.info(Constants.LOG_CATEGORY, "Remapped mod " + from.getFileName());
     }
@@ -79,7 +83,7 @@ public class RemapUtil {
             if (file.endsWith(".class")) classes.add(file.replace(".class", ""));
         }
 
-        classes.forEach(cl -> MOD_MAPPINGS.put(cl, "net/minecraft/" + cl));
+        classes.forEach(cl -> MOD_MAPPINGS.put(cl, cl.contains("net/minecraft/") ? cl : "net/minecraft/" + cl));
 
         return files;
     }
@@ -159,6 +163,8 @@ public class RemapUtil {
             BufferedReader bufferedReader = new BufferedReader(reader);
             tree = TinyMappingFactory.loadWithDetection(bufferedReader);
             tree = wrapTree(tree);
+            bufferedReader.close();
+            reader.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -174,7 +180,7 @@ public class RemapUtil {
                 .renameInvalidLocals(true)
                 .ignoreFieldDesc(false)
                 .propagatePrivate(true)
-                .ignoreConflicts(true);
+                .ignoreConflicts(true).resolveMissing(true).keepInputData(true);
 
         if (FabricLoader.getInstance().isDevelopmentEnvironment()) {
             builder.fixPackageAccess(true);
@@ -185,7 +191,20 @@ public class RemapUtil {
         }
 
         TinyRemapper remapper = builder.build();
-        remapper.readClassPath((Path) FabricLoader.getInstance().getObjectShare().get("fabric-loader:inputGameJar"));
+        try {
+            if (FabricLauncherBase.getLauncher().isDevelopment()) {
+                remapper.readClassPath(Paths.get(System.getProperty("org.lwjgl.librarypath"), "../../", "minecraft-1.5.2-merged.jar"));
+            }
+            else {
+                remapper.readClassPath(FabricLoaderImpl.getInstance().getGameDir().resolve("bin").resolve("minecraft.jar"));
+            }
+        } catch (Exception e) {
+            try {
+                remapper.readClassPath(FabricLoaderImpl.getInstance().getGameDir().resolve("minecraft.jar"));
+            } catch (Exception e2) {
+                throw new RuntimeException(e);
+            }
+        }
         return remapper;
     }
 
@@ -228,8 +247,7 @@ public class RemapUtil {
             final String primaryNamespace = getMetadata().getNamespaces().get(0); //If the namespaces are empty we shouldn't exist
 
             private Optional<String> remap(String name, String namespace) {
-                return Optional.ofNullable(getDefaultNamespaceClassMap().get(name)).map(mapping -> mapping.getRawName(namespace)).map(
-                        Strings::emptyToNull);
+                return Optional.ofNullable(getDefaultNamespaceClassMap().get(name)).map(mapping -> mapping.getRawName(namespace)).map(Strings::emptyToNull);
             }
 
             String remapDesc(String desc, String namespace) {

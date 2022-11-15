@@ -1,11 +1,11 @@
 package fr.catcore.fabricatedmodloader.utils;
 
-import net.minecraft.world.biome.Biome;
+import net.minecraft.src.*;
 
 public class SetBaseBiomesLayerData {
-    public static Biome[] biomeArray;
+    public static BiomeGenBase[] biomeArray;
 
     static {
-        biomeArray = new Biome[]{Biome.DESERT, Biome.FOREST, Biome.EXTREME_HILLS, Biome.SWAMPLAND, Biome.PLAINS, Biome.TAIGA, Biome.JUNGLE};
+        biomeArray = new BiomeGenBase[]{BiomeGenBase.desert, BiomeGenBase.forest, BiomeGenBase.extremeHills, BiomeGenBase.swampland, BiomeGenBase.plains, BiomeGenBase.taiga, BiomeGenBase.jungle};
     }
 }

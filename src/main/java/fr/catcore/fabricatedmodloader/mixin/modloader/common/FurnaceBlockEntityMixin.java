@@ -1,11 +1,7 @@
 package fr.catcore.fabricatedmodloader.mixin.modloader.common;
 
 import modloader.ModLoader;
-import net.minecraft.block.entity.BlockEntity;
-import net.minecraft.block.entity.FurnaceBlockEntity;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
+import net.minecraft.src.*;
 import org.objectweb.asm.Opcodes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -15,41 +11,39 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(FurnaceBlockEntity.class)
-public abstract class FurnaceBlockEntityMixin extends BlockEntity implements Inventory {
+@Mixin(TileEntityFurnace.class)
+public abstract class FurnaceBlockEntityMixin extends TileEntity implements IInventory {
 
-    @Shadow
-    protected abstract boolean method_525();
+    @Shadow protected ItemStack[] furnaceItemStacks;
 
-    @Shadow
-    private ItemStack[] stacks;
+    @Shadow protected abstract boolean canSmelt();
 
     @Unique
     private Item cachedRecipeReminder = null;
 
     @Inject(
-            method = "method_524",
+            method = "smeltItem",
             at = @At(value = "FIELD", opcode = Opcodes.GETFIELD,
-                    target = "Lnet/minecraft/item/ItemStack;count:I", shift = At.Shift.AFTER)
+                    target = "Lnet/minecraft/src/ItemStack;stackSize:I", shift = At.Shift.AFTER)
     )
     private void modLoader$fixStack(CallbackInfo ci) {
-        if (this.stacks[0].count <= 0) this.cachedRecipeReminder = this.stacks[0].getItem().getRecipeRemainder();
+        if (this.furnaceItemStacks[0].stackSize <= 0) this.cachedRecipeReminder = this.furnaceItemStacks[0].getItem().getContainerItem();
     }
 
-    @Inject(method = "method_524", at = @At("RETURN"))
+    @Inject(method = "smeltItem", at = @At("RETURN"))
     private void modLoader$fixStackPart2(CallbackInfo ci) {
-        if (this.method_525() && this.cachedRecipeReminder != null && this.stacks[0] == null) {
-            this.stacks[0] = new ItemStack(this.cachedRecipeReminder);
+        if (this.canSmelt() && this.cachedRecipeReminder != null && this.furnaceItemStacks[0] == null) {
+            this.furnaceItemStacks[0] = new ItemStack(this.cachedRecipeReminder);
             this.cachedRecipeReminder = null;
         }
     }
 
-    @Inject(method = "getBurnTime", at = @At("RETURN"), cancellable = true)
-    private static void modLoaderBurnTime(ItemStack stack, CallbackInfoReturnable<Integer> cir) {
+    @Inject(method = "getItemBurnTime", at = @At("RETURN"), cancellable = true)
+    private void modLoaderBurnTime(ItemStack stack, CallbackInfoReturnable<Integer> cir) {
         int result = cir.getReturnValue();
 
         if (result == 0 && stack != null) {
-            cir.setReturnValue(ModLoader.addAllFuel(stack.id, stack.getMeta()));
+            cir.setReturnValue(ModLoader.addAllFuel(stack.itemID, stack.getItemDamage()));
         }
     }
 }

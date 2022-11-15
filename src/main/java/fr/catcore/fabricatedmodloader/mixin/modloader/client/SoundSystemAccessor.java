@@ -1,19 +1,18 @@
 package fr.catcore.fabricatedmodloader.mixin.modloader.client;
 
-import net.minecraft.client.sound.SoundLoader;
-import net.minecraft.client.sound.SoundSystem;
+import net.minecraft.src.*;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-@Mixin(SoundSystem.class)
+@Mixin(SoundManager.class)
 public interface SoundSystemAccessor {
 
-    @Accessor("soundsLoader")
-    SoundLoader getSoundsLoader();
+    @Accessor("soundPoolSounds")
+    SoundPool getSoundsLoader();
 
-    @Accessor("bgmusicLoader")
-    SoundLoader getStreamingLoader();
+    @Accessor("soundPoolStreaming")
+    SoundPool getStreamingLoader();
 
-    @Accessor("musicLoader")
-    SoundLoader getMusicLoader();
+    @Accessor("soundPoolMusic")
+    SoundPool getMusicLoader();
 }

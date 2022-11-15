@@ -1,21 +1,21 @@
 package fr.catcore.fabricatedmodloader.mixin.modloader.common;
 
-import net.minecraft.block.entity.BlockEntity;
+import net.minecraft.src.*;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
 import java.util.Map;
 
-@Mixin(BlockEntity.class)
+@Mixin(TileEntity.class)
 public interface BlockEntityAccessor {
 
-    @Invoker("registerBlockEntity")
+    @Invoker("addMapping")
     static void callRegister(Class clazz, String stringId) {
         throw new AssertionError("@Invoker dummy body called");
     }
 
-    @Accessor("stringClassMap")
+    @Accessor("nameToClassMap")
     static Map getStringClassMap() {
         return null;
     }

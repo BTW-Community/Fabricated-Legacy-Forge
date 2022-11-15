@@ -1,33 +1,25 @@
 package fr.catcore.fabricatedmodloader.mixin.modloader.common;
 
 import fr.catcore.fabricatedmodloader.mixininterface.ILevelGeneratorType;
-import net.minecraft.world.LayeredBiomeSource;
-import net.minecraft.world.SingletonBiomeSource;
-import net.minecraft.world.World;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.chunk.ChunkProvider;
-import net.minecraft.world.chunk.FlatChunkGenerator;
-import net.minecraft.world.chunk.SurfaceChunkGenerator;
-import net.minecraft.world.gen.FlatWorldHelper;
-import net.minecraft.world.level.LevelGeneratorType;
+import net.minecraft.src.*;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
-@Mixin(LevelGeneratorType.class)
+@Mixin(WorldType.class)
 public class LevelGeneratorTypeMixin implements ILevelGeneratorType {
     @Shadow
     @Final
-    public static LevelGeneratorType FLAT;
+    public static WorldType FLAT;
 
     @Override
-    public LayeredBiomeSource getChunkManager(World world) {
-        return (Object) this == FLAT ? new SingletonBiomeSource(Biome.BIOMES[FlatWorldHelper.method_4101(world.getLevelProperties().getGeneratorOptions()).getBiomeId()], 0.5F, 0.5F) : new LayeredBiomeSource(world);
+    public WorldChunkManager getChunkManager(World world) {
+        return (Object) this == FLAT ? new WorldChunkManagerHell(BiomeGenBase.biomeList[FlatGeneratorInfo.createFlatGeneratorFromString(world.getWorldInfo().getGeneratorOptions()).getBiome()], 0.5F, 0.5F) : new WorldChunkManager(world);
     }
 
     @Override
-    public ChunkProvider getChunkGenerator(World world, String params) {
-        return (Object) this == FLAT ? new FlatChunkGenerator(world, world.getSeed(), world.getLevelProperties().hasStructures(), params) : new SurfaceChunkGenerator(world, world.getSeed(), world.getLevelProperties().hasStructures());
+    public IChunkProvider getChunkGenerator(World world, String params) {
+        return (Object) this == FLAT ? new ChunkProviderFlat(world, world.getSeed(), world.getWorldInfo().isMapFeaturesEnabled(), params) : new ChunkProviderGenerate(world, world.getSeed(), world.getWorldInfo().isMapFeaturesEnabled());
     }
 
     @Override

@@ -1,16 +1,13 @@
 package fr.catcore.fabricatedmodloader.utils;
 
 import com.google.common.collect.Maps;
+import fr.catcore.fabricatedmodloader.remapping.Log;
 import net.fabricmc.loader.api.FabricLoader;
 import net.fabricmc.loader.api.ModContainer;
-import net.fabricmc.loader.impl.ModContainerImpl;
-import net.fabricmc.loader.impl.discovery.ModCandidate;
-import net.fabricmc.loader.impl.game.GameProvider;
-import net.fabricmc.loader.impl.util.log.Log;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -28,24 +25,16 @@ public class FakeModManager {
     public static void init() {
         if (!loaded && !loading) {
             loading = true;
-            try {
-                createBuiltin = ModCandidate.class.getDeclaredMethod("createBuiltin", GameProvider.BuiltinMod.class);
-                createBuiltin.setAccessible(true);
 
-                MLModDiscoverer.init();
-                loading = false;
-                loaded = true;
-            } catch (NoSuchMethodException e) {
-                throw new RuntimeException(e);
-            }
+            MLModDiscoverer.init();
+            loading = false;
+            loaded = true;
         }
     }
 
     protected static void addModEntry(MLModEntry modEntry) {
         try {
-            ModCandidate candidate = (ModCandidate) createBuiltin.invoke(null, new GameProvider.BuiltinMod(Collections.emptyList(), new MLModMetadata(modEntry.modId, modEntry.modName)));
-            ModContainer container = new ModContainerImpl(candidate);
-
+            ModContainer container = new net.fabricmc.loader.ModContainer(new MLModMetadata(modEntry.modId, modEntry.modName), modEntry.original.toURL());
             FabricLoader loader = FabricLoader.getInstance();
 
             getModList(loader).add(container);
@@ -53,7 +42,7 @@ public class FakeModManager {
 
             MODS.add(modEntry);
             Log.info(Constants.LOG_CATEGORY, "Added ModLoader mod " + modEntry.modName + " to mod list.");
-        } catch (IllegalAccessException | InvocationTargetException e) {
+        } catch (MalformedURLException e) {
             throw new RuntimeException(e);
         }
     }

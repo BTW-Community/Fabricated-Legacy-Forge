@@ -1,19 +1,18 @@
 package fr.catcore.fabricatedmodloader.mixin.modloader.client;
 
-import net.minecraft.client.render.entity.PlayerEntityRenderer;
+import net.minecraft.src.*;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-@Mixin(PlayerEntityRenderer.class)
+@Mixin(RenderPlayer.class)
 public interface PlayerEntityRendererAccessor {
 
-    @Accessor("field_2136")
+    @Accessor("armorFilenamePrefix")
     static void setArmor(String[] armor) {
 
     }
 
-
-    @Accessor("field_2136")
+    @Accessor("armorFilenamePrefix")
     static String[] getArmor() {
         return new String[0];
     }

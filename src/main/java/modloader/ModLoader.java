@@ -6,55 +6,12 @@ import fr.catcore.fabricatedmodloader.mixin.modloader.client.SoundSystemAccessor
 import fr.catcore.fabricatedmodloader.mixin.modloader.client.class_534Accessor;
 import fr.catcore.fabricatedmodloader.mixin.modloader.common.*;
 import fr.catcore.fabricatedmodloader.mixininterface.ISoundLoader;
+import fr.catcore.fabricatedmodloader.remapping.Log;
 import fr.catcore.fabricatedmodloader.utils.*;
 import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.impl.util.log.Log;
-import net.minecraft.advancement.Achievement;
-import net.minecraft.block.Block;
-import net.minecraft.block.DispenserBlock;
-import net.minecraft.block.dispenser.DispenserBehavior;
-import net.minecraft.client.*;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.client.render.block.entity.BlockEntityRenderDispatcher;
-import net.minecraft.client.render.block.entity.BlockEntityRenderer;
-import net.minecraft.client.sound.SoundLoader;
-import net.minecraft.client.texture.TexturePackManager;
-import net.minecraft.command.Command;
-import net.minecraft.entity.*;
-import net.minecraft.entity.mob.MobEntity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.ServerPlayerEntity;
-import net.minecraft.entity.player.class_481;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.BlockItem;
-import net.minecraft.item.Item;
-import net.minecraft.item.ItemStack;
-import net.minecraft.nbt.NbtCompound;
-import net.minecraft.network.Packet;
-import net.minecraft.network.class_690;
-import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
-import net.minecraft.network.packet.s2c.play.OpenScreen_S2CPacket;
-import net.minecraft.recipe.RecipeDispatcher;
-import net.minecraft.recipe.RecipeType;
-import net.minecraft.recipe.SmeltingRecipeRegistry;
-import net.minecraft.screen.ScreenHandler;
+import net.minecraft.client.Minecraft;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.server.ServerPacketListener;
-import net.minecraft.server.command.CommandRegistry;
-import net.minecraft.server.command.CommandRegistryProvider;
-import net.minecraft.stat.CraftingStat;
-import net.minecraft.stat.Stats;
-import net.minecraft.util.CommonI18n;
-import net.minecraft.util.Language;
-import net.minecraft.util.crash.CrashReport;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldView;
-import net.minecraft.world.biome.Biome;
-import net.minecraft.world.biome.EndBiome;
-import net.minecraft.world.biome.NetherBiome;
-import net.minecraft.world.chunk.ChunkProvider;
+import net.minecraft.src.*;
 import org.lwjgl.input.Keyboard;
 import org.lwjgl.input.Mouse;
 
@@ -97,29 +54,29 @@ public final class ModLoader {
     private static final Map<Integer, Map<String, Integer>> overrides = new HashMap<>();
     private static final Map<String, BaseMod> packetChannels = new HashMap<>();
     public static final Properties props = new Properties();
-    private static Biome[] standardBiomes;
+    private static BiomeGenBase[] standardBiomes;
     public static final String VERSION = "ModLoader 1.5.2";
-    private static class_469 clientHandler = null;
-    private static final List<Command> commandList = new LinkedList<>();
+    private static NetClientHandler clientHandler = null;
+    private static final List<ICommand> commandList = new LinkedList<>();
     private static final Map<Integer, List<TradeEntry>> tradeItems = new HashMap<>();
     private static final Map<Integer, BaseMod> containerGUIs = new HashMap<>();
     private static final Map<Class<?>, EntityTrackerNonliving> trackers = new HashMap<>();
-    private static final Map<Item, DispenserBehavior> dispenserBehaviors = new HashMap<>();
-    private static final Map<String, class_1528> customTextures = new HashMap<>();
-    private static SoundLoader soundPoolSounds;
-    private static SoundLoader soundPoolStreaming;
-    private static SoundLoader soundPoolMusic;
+    private static final Map<Item, IBehaviorDispenseItem> dispenserBehaviors = new HashMap<>();
+    private static final Map<String, TextureStitched> customTextures = new HashMap<>();
+    private static SoundPool soundPoolSounds;
+    private static SoundPool soundPoolStreaming;
+    private static SoundPool soundPoolMusic;
 
     public static void addAchievementDesc(Achievement achievement, String s, String s1) {
         try {
-            if (achievement.getStringId().contains(".")) {
-                String[] as = achievement.getStringId().split("\\.");
+            if (achievement.getName().contains(".")) {
+                String[] as = achievement.getName().split("\\.");
                 if (as.length == 2) {
                     String s2 = as[1];
                     addLocalization("achievement." + s2, s);
                     addLocalization("achievement." + s2 + ".desc", s1);
-                    ((StatAccessor) achievement).setStringId(CommonI18n.translate("achievement." + s2));
-                    ((AchievementAccessor) achievement).setAchievementDescription(CommonI18n.translate("achievement." + s2 + ".desc"));
+                    ((StatAccessor) achievement).setStringId(StatCollector.translateToLocal("achievement." + s2));
+                    ((AchievementAccessor) achievement).setAchievementDescription(StatCollector.translateToLocal("achievement." + s2 + ".desc"));
                 } else {
                     ((StatAccessor) achievement).setStringId(s);
                     ((AchievementAccessor) achievement).setAchievementDescription(s1);
@@ -167,12 +124,15 @@ public final class ModLoader {
         return result;
     }
 
+    private static boolean addAllRenderersCalled = false;
     public static void addAllRenderers(Map renderers) {
         if (!hasInit) {
+            //if (true) return;
             init();
             Log.debug(Constants.MODLOADER_LOG_CATEGORY, "Initialized");
         }
-
+        if (addAllRenderersCalled) return;
+        addAllRenderersCalled = true;
         for (BaseMod mod : modList) {
             mod.addRenderer(renderers);
         }
@@ -199,36 +159,36 @@ public final class ModLoader {
         return -1;
     }
 
-    public static void addBiome(Biome biomegenbase) {
-        Biome[] abiomegenbase = SetBaseBiomesLayerData.biomeArray;
-        List<Biome> list = Arrays.asList(abiomegenbase);
-        ArrayList<Biome> arraylist = new ArrayList<>(list);
+    public static void addBiome(BiomeGenBase biomegenbase) {
+        BiomeGenBase[] abiomegenbase = SetBaseBiomesLayerData.biomeArray;
+        List<BiomeGenBase> list = Arrays.asList(abiomegenbase);
+        ArrayList<BiomeGenBase> arraylist = new ArrayList<>(list);
         if (!arraylist.contains(biomegenbase)) {
             arraylist.add(biomegenbase);
         }
 
-        SetBaseBiomesLayerData.biomeArray = arraylist.toArray(new Biome[0]);
+        SetBaseBiomesLayerData.biomeArray = arraylist.toArray(new BiomeGenBase[0]);
     }
 
-    public static void addCommand(Command cmd) {
+    public static void addCommand(ICommand cmd) {
         commandList.add(cmd);
     }
 
-    public static void addDispenserBehavior(Item item, DispenserBehavior behavior) {
+    public static void addDispenserBehavior(Item item, IBehaviorDispenseItem behavior) {
         dispenserBehaviors.put(item, behavior);
     }
 
     public static void registerServer(MinecraftServer server) {
-        CommandRegistryProvider manager = server.getCommandManager();
-        if (manager instanceof CommandRegistry) {
-            CommandRegistry handler = (CommandRegistry) manager;
+        ICommandManager manager = server.getCommandManager();
+        if (manager instanceof CommandHandler) {
+            CommandHandler handler = (CommandHandler) manager;
 
-            for (Command cmd : commandList) {
+            for (ICommand cmd : commandList) {
                 handler.registerCommand(cmd);
             }
 
-            for (Map.Entry<Item, DispenserBehavior> entry : dispenserBehaviors.entrySet()) {
-                DispenserBlock.BEHAVIOR_REGISTRY.put(entry.getKey(), entry.getValue());
+            for (Map.Entry<Item, IBehaviorDispenseItem> entry : dispenserBehaviors.entrySet()) {
+                BlockDispenser.dispenseBehaviorRegistry.putObject(entry.getKey(), entry.getValue());
             }
         }
     }
@@ -315,17 +275,17 @@ public final class ModLoader {
         Exception exception1;
         if (obj instanceof Item) {
             Item item = (Item) obj;
-            if (item.getTranslationKey() != null) {
-                s2 = item.getTranslationKey() + ".name";
+            if (item.getUnlocalizedName() != null) {
+                s2 = item.getUnlocalizedName() + ".name";
             }
         } else if (obj instanceof Block) {
             Block block = (Block) obj;
-            if (block.getTranslationKey() != null) {
-                s2 = block.getTranslationKey() + ".name";
+            if (block.getUnlocalizedName() != null) {
+                s2 = block.getUnlocalizedName() + ".name";
             }
         } else if (obj instanceof ItemStack) {
             ItemStack itemstack = (ItemStack) obj;
-            String s3 = Item.ITEMS[itemstack.id].getTranslationKey(itemstack);
+            String s3 = Item.itemsList[itemstack.itemID].getUnlocalizedName(itemstack);
             if (s3 != null) {
                 s2 = s3 + ".name";
             }
@@ -346,22 +306,22 @@ public final class ModLoader {
     }
 
     public static void addRecipe(ItemStack itemstack, Object... aobj) {
-        ((RecipeDispatcherAccessor) RecipeDispatcher.getInstance()).registerShapedRecipe_invoker(itemstack, aobj);
+        ((RecipeDispatcherAccessor) CraftingManager.getInstance()).registerShapedRecipe_invoker(itemstack, aobj);
     }
 
     public static void addShapelessRecipe(ItemStack itemstack, Object... aobj) {
-        ((RecipeDispatcherAccessor) RecipeDispatcher.getInstance()).registerShapelessRecipe_invoker(itemstack, aobj);
+        ((RecipeDispatcherAccessor) CraftingManager.getInstance()).registerShapelessRecipe_invoker(itemstack, aobj);
     }
 
     public static void addSmelting(int i, ItemStack itemstack, float xp) {
-        SmeltingRecipeRegistry.getInstance().method_3488(i, itemstack, xp);
+        FurnaceRecipes.smelting().addSmelting(i, itemstack, xp);
     }
 
-    public static void addSpawn(Class class1, int i, int j, int k, EntityCategory enumcreaturetype) {
+    public static void addSpawn(Class class1, int i, int j, int k, EnumCreatureType enumcreaturetype) {
         addSpawn(class1, i, j, k, enumcreaturetype, null);
     }
 
-    public static void addSpawn(Class class1, int i, int j, int k, EntityCategory enumcreaturetype, Biome[] abiomegenbase) {
+    public static void addSpawn(Class class1, int i, int j, int k, EnumCreatureType enumcreaturetype, BiomeGenBase[] abiomegenbase) {
         if (class1 == null) {
             throw new IllegalArgumentException("entityClass cannot be null");
         } else if (enumcreaturetype == null) {
@@ -371,23 +331,23 @@ public final class ModLoader {
                 abiomegenbase = standardBiomes;
             }
 
-            for (Biome biome : abiomegenbase) {
-                List<SpawnEntry> list = biome.getSpawnEntries(enumcreaturetype);
+            for (BiomeGenBase BiomeGenBase : abiomegenbase) {
+                List<SpawnListEntry> list = BiomeGenBase.getSpawnableList(enumcreaturetype);
                 if (list != null) {
                     boolean flag = false;
 
-                    for (SpawnEntry spawnlistentry : list) {
-                        if (spawnlistentry.type == class1) {
+                    for (SpawnListEntry spawnlistentry : list) {
+                        if (spawnlistentry.entityClass == class1) {
                             ((WeightAccessor) spawnlistentry).setWeight(i);
-                            spawnlistentry.minGroupSize = j;
-                            spawnlistentry.maxGroupSize = k;
+                            spawnlistentry.minGroupCount = j;
+                            spawnlistentry.maxGroupCount = k;
                             flag = true;
                             break;
                         }
                     }
 
                     if (!flag) {
-                        list.add(new SpawnEntry(class1, i, j, k));
+                        list.add(new SpawnListEntry(class1, i, j, k));
                     }
                 }
             }
@@ -395,46 +355,46 @@ public final class ModLoader {
         }
     }
 
-    public static void addSpawn(String s, int i, int j, int k, EntityCategory enumcreaturetype) {
+    public static void addSpawn(String s, int i, int j, int k, EnumCreatureType enumcreaturetype) {
         addSpawn(s, i, j, k, enumcreaturetype, null);
     }
 
-    public static void addSpawn(String s, int i, int j, int k, EntityCategory enumcreaturetype, Biome[] abiomegenbase) {
+    public static void addSpawn(String s, int i, int j, int k, EnumCreatureType enumcreaturetype, BiomeGenBase[] abiomegenbase) {
         Class<?> class1 = EntityTypeAccessor.getClassMap().get(s);
-        if (class1 != null && MobEntity.class.isAssignableFrom(class1)) {
+        if (class1 != null && EntityLiving.class.isAssignableFrom(class1)) {
             addSpawn(class1, i, j, k, enumcreaturetype, abiomegenbase);
         }
 
     }
 
     public static void genericContainerRemoval(World world, int i, int j, int k) {
-        Inventory iinventory = (Inventory) world.method_3781(i, j, k);
+        IInventory iinventory = (IInventory) world.getBlockTileEntity(i, j, k);
         if (iinventory != null) {
-            for (int l = 0; l < iinventory.getInvSize(); ++l) {
-                ItemStack itemstack = iinventory.getInvStack(l);
+            for (int l = 0; l < iinventory.getSizeInventory(); ++l) {
+                ItemStack itemstack = iinventory.getStackInSlot(l);
                 if (itemstack != null) {
-                    double d = world.random.nextDouble() * 0.8D + 0.1D;
-                    double d1 = world.random.nextDouble() * 0.8D + 0.1D;
+                    double d = world.rand.nextDouble() * 0.8D + 0.1D;
+                    double d1 = world.rand.nextDouble() * 0.8D + 0.1D;
 
-                    ItemEntity entityitem;
-                    for (double d2 = world.random.nextDouble() * 0.8D + 0.1D; itemstack.count > 0; world.spawnEntity(entityitem)) {
-                        int i1 = world.random.nextInt(21) + 10;
-                        if (i1 > itemstack.count) {
-                            i1 = itemstack.count;
+                    EntityItem entityitem;
+                    for (double d2 = world.rand.nextDouble() * 0.8D + 0.1D; itemstack.stackSize > 0; world.spawnEntityInWorld(entityitem)) {
+                        int i1 = world.rand.nextInt(21) + 10;
+                        if (i1 > itemstack.stackSize) {
+                            i1 = itemstack.stackSize;
                         }
 
-                        itemstack.count -= i1;
-                        entityitem = new ItemEntity(world, (double) i + d, (double) j + d1, (double) k + d2, new ItemStack(itemstack.id, i1, itemstack.getMeta()));
+                        itemstack.stackSize -= i1;
+                        entityitem = new EntityItem(world, (double) i + d, (double) j + d1, (double) k + d2, new ItemStack(itemstack.itemID, i1, itemstack.getItemDamage()));
                         double d3 = 0.05D;
-                        entityitem.velocityX = world.random.nextGaussian() * d3;
-                        entityitem.velocityY = world.random.nextGaussian() * d3 + 0.2D;
-                        entityitem.velocityZ = world.random.nextGaussian() * d3;
-                        if (itemstack.hasNbt()) {
-                            entityitem.method_4548().setNbt((NbtCompound) itemstack.getNbt().copy());
+                        entityitem.motionX = world.rand.nextGaussian() * d3;
+                        entityitem.motionY = world.rand.nextGaussian() * d3 + 0.2D;
+                        entityitem.motionZ = world.rand.nextGaussian() * d3;
+                        if (itemstack.hasTagCompound()) {
+                            entityitem.getEntityItem().setTagCompound((NBTTagCompound) itemstack.getTagCompound().copy());
                         }
                     }
 
-                    iinventory.setInvStack(l, null);
+                    iinventory.setInventorySlotContents(l, null);
                 }
             }
         }
@@ -493,24 +453,24 @@ public final class ModLoader {
 
         try {
             instance = Minecraft.getMinecraft();
-            instance.gameRenderer = new EntityRendererProxy(instance);
-            soundPoolSounds = ((SoundSystemAccessor) instance.soundSystem).getSoundsLoader();
-            soundPoolStreaming = ((SoundSystemAccessor) instance.soundSystem).getStreamingLoader();
-            soundPoolMusic = ((SoundSystemAccessor) instance.soundSystem).getMusicLoader();
-            Field[] afield = Biome.class.getDeclaredFields();
-            LinkedList<Biome> linkedlist = new LinkedList<>();
+            instance.entityRenderer = new EntityRendererProxy(instance);
+            soundPoolSounds = ((SoundSystemAccessor) instance.sndManager).getSoundsLoader();
+            soundPoolStreaming = ((SoundSystemAccessor) instance.sndManager).getStreamingLoader();
+            soundPoolMusic = ((SoundSystemAccessor) instance.sndManager).getMusicLoader();
+            Field[] afield = BiomeGenBase.class.getDeclaredFields();
+            LinkedList<BiomeGenBase> linkedlist = new LinkedList<>();
 
             for (Field field : afield) {
                 Class<?> class1 = field.getType();
-                if ((field.getModifiers() & 8) != 0 && class1.isAssignableFrom(Biome.class)) {
-                    Biome biomegenbase = (Biome) field.get(null);
-                    if (!(biomegenbase instanceof NetherBiome) && !(biomegenbase instanceof EndBiome)) {
+                if ((field.getModifiers() & 8) != 0 && class1.isAssignableFrom(BiomeGenBase.class)) {
+                    BiomeGenBase biomegenbase = (BiomeGenBase) field.get(null);
+                    if (!(biomegenbase instanceof BiomeGenHell) && !(biomegenbase instanceof BiomeGenEnd)) {
                         linkedlist.add(biomegenbase);
                     }
                 }
             }
 
-            standardBiomes = linkedlist.toArray(new Biome[0]);
+            standardBiomes = linkedlist.toArray(new BiomeGenBase[0]);
         } catch (SecurityException | IllegalArgumentException | IllegalAccessException var10) {
             Log.trace(Constants.MODLOADER_LOG_CATEGORY, "ModLoader init", var10);
             throwException(var10);
@@ -555,8 +515,8 @@ public final class ModLoader {
             Log.info(Constants.MODLOADER_LOG_CATEGORY, "Done.");
             props.setProperty("loggingLevel", cfgLoggingLevel.getName());
             props.setProperty("grassFix", Boolean.toString(class_535Data.cfgGrassFix));
-            instance.options.keysAll = registerAllKeys(instance.options.keysAll);
-            instance.options.load();
+            instance.gameSettings.keyBindings = registerAllKeys(instance.gameSettings.keyBindings);
+            instance.gameSettings.loadOptions();
             initStats();
             saveConfig();
         } catch (Throwable var9) {
@@ -573,44 +533,44 @@ public final class ModLoader {
     private static void initStats() {
         int j;
         String s2;
-        for (j = 0; j < Block.BLOCKS.length; ++j) {
-            if (!StatsAccessor.getIdToStat().containsKey(16777216 + j) && Block.BLOCKS[j] != null && Block.BLOCKS[j].hasStats()) {
-                s2 = CommonI18n.translate("stat.mineBlock", Block.BLOCKS[j].getTranslatedName());
-                Stats.BLOCK_STATS[j] = (new CraftingStat(16777216 + j, s2, j)).addStat();
-                Stats.MINE.add(Stats.BLOCK_STATS[j]);
+        for (j = 0; j < Block.blocksList.length; ++j) {
+            if (!StatsAccessor.getIdToStat().containsKey(16777216 + j) && Block.blocksList[j] != null && Block.blocksList[j].getEnableStats()) {
+                s2 = StatCollector.translateToLocalFormatted("stat.mineBlock", Block.blocksList[j].getLocalizedName());
+                StatList.mineBlockStatArray[j] = (new StatCrafting(16777216 + j, s2, j)).registerStat();
+                StatList.objectMineStats.add(StatList.mineBlockStatArray[j]);
             }
         }
 
-        for (j = 0; j < Item.ITEMS.length; ++j) {
-            if (!StatsAccessor.getIdToStat().containsKey(16908288 + j) && Item.ITEMS[j] != null) {
-                s2 = CommonI18n.translate("stat.useItem", Item.ITEMS[j].getName());
-                Stats.USED[j] = (new CraftingStat(16908288 + j, s2, j)).addStat();
-                if (j >= Block.BLOCKS.length) {
-                    Stats.ITEM.add(Stats.USED[j]);
+        for (j = 0; j < Item.itemsList.length; ++j) {
+            if (!StatsAccessor.getIdToStat().containsKey(16908288 + j) && Item.itemsList[j] != null) {
+                s2 = StatCollector.translateToLocalFormatted("stat.useItem", Item.itemsList[j].getStatName());
+                StatList.objectUseStats[j] = (new StatCrafting(16908288 + j, s2, j)).registerStat();
+                if (j >= Block.blocksList.length) {
+                    StatList.itemStats.add(StatList.objectUseStats[j]);
                 }
             }
 
-            if (!StatsAccessor.getIdToStat().containsKey(16973824 + j) && Item.ITEMS[j] != null && Item.ITEMS[j].isDamageable()) {
-                s2 = CommonI18n.translate("stat.breakItem", Item.ITEMS[j].getName());
-                Stats.BROKEN[j] = (new CraftingStat(16973824 + j, s2, j)).addStat();
+            if (!StatsAccessor.getIdToStat().containsKey(16973824 + j) && Item.itemsList[j] != null && Item.itemsList[j].isDamageable()) {
+                s2 = StatCollector.translateToLocalFormatted("stat.breakItem", Item.itemsList[j].getStatName());
+                StatList.objectBreakStats[j] = (new StatCrafting(16973824 + j, s2, j)).registerStat();
             }
         }
 
         HashSet<Integer> hashset = new HashSet<>();
 
-        for (RecipeType obj : (Iterable<RecipeType>) RecipeDispatcher.getInstance().getAllRecipes()) {
-            ItemStack output = obj.getOutput();
-            if (output != null) hashset.add(output.id);
+        for (IRecipe obj : (Iterable<IRecipe>) CraftingManager.getInstance().getRecipeList()) {
+            ItemStack output = obj.getRecipeOutput();
+            if (output != null) hashset.add(output.itemID);
         }
 
-        for (ItemStack obj1 : (Iterable<ItemStack>) SmeltingRecipeRegistry.getInstance().getRecipeMap().values()) {
-            hashset.add(obj1.id);
+        for (ItemStack obj1 : (Iterable<ItemStack>) FurnaceRecipes.smelting().getSmeltingList().values()) {
+            hashset.add(obj1.itemID);
         }
 
         for (int k : hashset) {
-            if (!StatsAccessor.getIdToStat().containsKey(16842752 + k) && Item.ITEMS[k] != null) {
-                String s3 = CommonI18n.translate("stat.craftItem", Item.ITEMS[k].getName());
-                Stats.CRAFTING_STATS[k] = (new CraftingStat(16842752 + k, s3, k)).addStat();
+            if (!StatsAccessor.getIdToStat().containsKey(16842752 + k) && Item.itemsList[k] != null) {
+                String s3 = StatCollector.translateToLocalFormatted("stat.craftItem", Item.itemsList[k].getStatName());
+                StatList.objectCraftStats[k] = (new StatCrafting(16842752 + k, s3, k)).registerStat();
             }
         }
 
@@ -652,9 +612,9 @@ public final class ModLoader {
         }
     }
 
-    public static BufferedImage loadImage(class_534 renderengine, String s) throws Exception {
-        TexturePackManager texturepacklist = ((class_534Accessor) renderengine).getTexturePackManager();
-        InputStream inputstream = texturepacklist.getCurrentTexturePack().openStream(s);
+    public static BufferedImage loadImage(RenderEngine renderengine, String s) throws Exception {
+        TexturePackList texturepacklist = ((class_534Accessor) renderengine).getTexturePackManager();
+        InputStream inputstream = texturepacklist.getSelectedTexturePack().getResourceAsStream(s);
         if (inputstream == null) {
             throw new Exception("Image not found: " + s);
         } else {
@@ -667,7 +627,7 @@ public final class ModLoader {
         }
     }
 
-    public static void onItemPickup(PlayerEntity entityplayer, ItemStack itemstack) {
+    public static void onItemPickup(EntityPlayer entityplayer, ItemStack itemstack) {
         for (BaseMod basemod : modList) {
             basemod.onItemPickup(entityplayer, itemstack);
         }
@@ -675,18 +635,18 @@ public final class ModLoader {
     }
 
     public static void onTick(float f, Minecraft minecraft) {
-        minecraft.profiler.pop();
-        minecraft.profiler.pop();
-        minecraft.profiler.push("modtick");
+        minecraft.mcProfiler.endSection();
+        minecraft.mcProfiler.endSection();
+        minecraft.mcProfiler.startSection("modtick");
         if (!hasInit) {
             init();
             Log.debug(Constants.MODLOADER_LOG_CATEGORY, "Initialized");
         }
 
-        if (langPack == null || !Objects.equals(Language.getInstance().getCode(), langPack)) {
-            Properties properties = ((LanguageAccessor) Language.getInstance()).getTranslationMap();
+        if (langPack == null || !Objects.equals(StringTranslate.getInstance().getCurrentLanguage(), langPack)) {
+            Properties properties = ((LanguageAccessor) StringTranslate.getInstance()).getTranslationMap();
 
-            langPack = Language.getInstance().getCode();
+            langPack = StringTranslate.getInstance().getCurrentLanguage();
             if (properties != null) {
                 if (localizedStrings.containsKey("en_US")) {
                     properties.putAll(localizedStrings.get("en_US"));
@@ -699,8 +659,8 @@ public final class ModLoader {
         }
 
         long l = 0L;
-        if (minecraft.playerEntity != null && minecraft.playerEntity.world != null) {
-            l = minecraft.playerEntity.world.getTimeOfDay();
+        if (minecraft.thePlayer != null && minecraft.thePlayer.worldObj != null) {
+            l = minecraft.thePlayer.worldObj.getWorldTime();
             Iterator<Map.Entry<BaseMod, Boolean>> iterator1 = inGameHooks.entrySet().iterator();
             Map.Entry<BaseMod, Boolean> entry;
 
@@ -720,7 +680,7 @@ public final class ModLoader {
             }
         }
 
-        if (minecraft.playerEntity != null && minecraft.currentScreen != null) {
+        if (minecraft.thePlayer != null && minecraft.currentScreen != null) {
             Iterator<Map.Entry<BaseMod, Boolean>> iterator1 = inGUIHooks.entrySet().iterator();
             Map.Entry<BaseMod, Boolean> entry;
 
@@ -732,7 +692,7 @@ public final class ModLoader {
                     }
 
                     entry = iterator1.next();
-                } while (clock == l && entry.getValue() & minecraft.playerEntity.world != null);
+                } while (clock == l && entry.getValue() & minecraft.thePlayer.worldObj != null);
 
                 if (!entry.getKey().onTickInGUI(f, minecraft, minecraft.currentScreen)) {
                     iterator1.remove();
@@ -761,7 +721,7 @@ public final class ModLoader {
                             }
 
                             entry3 = iterator3.next();
-                            int i = entry3.getKey().code;
+                            int i = entry3.getKey().keyCode;
                             if (i < 0) {
                                 i += 100;
                                 flag = Mouse.isButtonDown(i);
@@ -781,27 +741,27 @@ public final class ModLoader {
         }
 
         clock = l;
-        minecraft.profiler.pop();
-        minecraft.profiler.push("render");
-        minecraft.profiler.push("gameRenderer");
+        minecraft.mcProfiler.endSection();
+        minecraft.mcProfiler.startSection("render");
+        minecraft.mcProfiler.startSection("gameRenderer");
     }
 
-    public static void openGUI(PlayerEntity entityplayer, Screen guiscreen) {
+    public static void openGUI(EntityPlayer entityplayer, GuiScreen guiscreen) {
         if (!hasInit) {
             init();
             Log.debug(Constants.MODLOADER_LOG_CATEGORY, "Initialized");
         }
 
         Minecraft minecraft = getMinecraftInstance();
-        if (minecraft.playerEntity == entityplayer) {
+        if (minecraft.thePlayer == entityplayer) {
             if (guiscreen != null) {
-                minecraft.openScreen(guiscreen);
+                minecraft.displayGuiScreen(guiscreen);
             }
 
         }
     }
 
-    public static void populateChunk(ChunkProvider ichunkprovider, int i, int j, World world) {
+    public static void populateChunk(IChunkProvider ichunkprovider, int i, int j, World world) {
         if (!hasInit) {
             init();
             Log.debug(Constants.MODLOADER_LOG_CATEGORY, "Initialized");
@@ -813,9 +773,9 @@ public final class ModLoader {
         random.setSeed((long) i * l + (long) j * l1 ^ world.getSeed());
 
         for (BaseMod basemod : modList) {
-            if (world.dimension.canPlayersSleep()) {
+            if (world.provider.isSurfaceWorld()) {
                 basemod.generateSurface(world, random, i << 4, j << 4);
-            } else if (world.dimension.waterVaporizes) {
+            } else if (world.provider.isHellWorld) {
                 basemod.generateNether(world, random, i << 4, j << 4);
             }
         }
@@ -826,30 +786,29 @@ public final class ModLoader {
         ClassLoader classloader = Minecraft.class.getClassLoader();
 
         FakeModManager.getMods().forEach(modEntry -> modEntry.sounds.forEach((soundType, strings) -> {
-            ISoundLoader soundLoader = (ISoundLoader) (soundType == MLModEntry.SoundType.sound ? soundPoolSounds : soundType == MLModEntry.SoundType.music ? soundPoolMusic : soundPoolStreaming);
+            ISoundLoader SoundPool = (ISoundLoader) (soundType == MLModEntry.SoundType.sound ? soundPoolSounds : soundType == MLModEntry.SoundType.music ? soundPoolMusic : soundPoolStreaming);
             for (String soundName : strings) {
                 try {
-                    soundLoader.addSound(soundName, new URL(String.format("jar:%s!/%s", modEntry.file, "resources/" + soundType.name() + "/" + soundName)));
+                    SoundPool.addSound(soundName, new URL(String.format("jar:%s!/%s", modEntry.file, "resources/" + soundType.name() + "/" + soundName)));
                 } catch (MalformedURLException e) {
                     e.printStackTrace();
                 }
             }
         }));
-
         FakeModManager.getMods().forEach(modEntry -> addMod(classloader, modEntry.initClass));
     }
 
-    public static void clientCustomPayload(CustomPayloadC2SPacket packet) {
+    public static void clientCustomPayload(Packet250CustomPayload packet) {
         if (packet.channel.equals("ML|OpenTE")) {
             try {
-                DataInputStream stream = new DataInputStream(new ByteArrayInputStream(packet.field_2455));
+                DataInputStream stream = new DataInputStream(new ByteArrayInputStream(packet.data));
                 int guiID = stream.read();
                 int contID = stream.readInt();
                 int x = stream.readInt();
                 int y = stream.readInt();
                 int z = stream.readInt();
                 int dim = (byte) stream.read();
-                class_481 player = instance.playerEntity;
+                EntityClientPlayerMP player = instance.thePlayer;
                 if (player.dimension != dim) {
                     return;
                 }
@@ -857,13 +816,13 @@ public final class ModLoader {
                 if (containerGUIs.containsKey(contID)) {
                     BaseMod basemod = containerGUIs.get(contID);
                     if (basemod != null) {
-                        HandledScreen gui = basemod.getContainerGUI(player, contID, x, y, z);
+                        GuiContainer gui = basemod.getContainerGUI(player, contID, x, y, z);
                         if (gui == null) {
                             return;
                         }
 
-                        instance.openScreen(gui);
-                        player.openScreenHandler.syncId = guiID;
+                        instance.displayGuiScreen(gui);
+                        player.openContainer.windowId = guiID;
                     }
                 }
             } catch (IOException var11) {
@@ -878,7 +837,7 @@ public final class ModLoader {
 
     }
 
-    public static void serverCustomPayload(ServerPacketListener serverHandler, CustomPayloadC2SPacket packet250custompayload) {
+    public static void serverCustomPayload(NetServerHandler serverHandler, Packet250CustomPayload packet250custompayload) {
         if (packetChannels.containsKey(packet250custompayload.channel)) {
             BaseMod basemod = packetChannels.get(packet250custompayload.channel);
             if (basemod != null) {
@@ -892,12 +851,12 @@ public final class ModLoader {
         containerGUIs.put(id, mod);
     }
 
-    public static void clientOpenWindow(OpenScreen_S2CPacket par1Packet100OpenWindow) {
+    public static void clientOpenWindow(Packet100OpenWindow par1Packet100OpenWindow) {
     }
 
-    public static void serverOpenWindow(ServerPlayerEntity player, ScreenHandler container, int id, int x, int y, int z) {
+    public static void serverOpenWindow(EntityPlayerMP player, Container container, int id, int x, int y, int z) {
         try {
-            Field winIDField = ServerPlayerEntity.class.getDeclaredFields()[16];
+            Field winIDField = EntityPlayerMP.class.getDeclaredFields()[16];
             winIDField.setAccessible(true);
             System.out.println(winIDField.getName());
             int winID = winIDField.getInt(player);
@@ -911,10 +870,10 @@ public final class ModLoader {
             stream.writeInt(y);
             stream.writeInt(z);
             stream.write(player.dimension);
-            player.field_2823.sendPacket(new CustomPayloadC2SPacket("ML|OpenTE", bytestream.toByteArray()));
-            player.openScreenHandler = container;
-            player.openScreenHandler.syncId = winID;
-            player.openScreenHandler.close(player);
+            player.playerNetServerHandler.sendPacketToPlayer(new Packet250CustomPayload("ML|OpenTE", bytestream.toByteArray()));
+            player.openContainer = container;
+            player.openContainer.windowId = winID;
+            player.openContainer.onCraftGuiClosed(player);
         } catch (Exception var10) {
             var10.printStackTrace();
         }
@@ -941,16 +900,16 @@ public final class ModLoader {
                 throw new IllegalArgumentException("block parameter cannot be null.");
             }
 
-            int i = block.id;
-            BlockItem itemblock;
+            int i = block.blockID;
+            ItemBlock itemblock;
             if (class1 != null) {
-                itemblock = (BlockItem) class1.getConstructor(Integer.TYPE).newInstance(i - 256);
+                itemblock = (ItemBlock) class1.getConstructor(Integer.TYPE).newInstance(i - 256);
             } else {
-                itemblock = new BlockItem(i - 256);
+                itemblock = new ItemBlock(i - 256);
             }
 
-            if (Block.BLOCKS[i] != null && Item.ITEMS[i] == null) {
-                Item.ITEMS[i] = itemblock;
+            if (Block.blocksList[i] != null && Item.itemsList[i] == null) {
+                Item.itemsList[i] = itemblock;
             }
         } catch (IllegalArgumentException | IllegalAccessException | SecurityException | InstantiationException |
                  InvocationTargetException | NoSuchMethodException var4) {
@@ -972,7 +931,7 @@ public final class ModLoader {
 
     public static void registerEntityID(Class class1, String s, int i, int j, int k) {
         registerEntityID(class1, s, i);
-        EntityType.field_3267.put(i, new class_868(i, j, k));
+        EntityList.entityEggs.put(i, new EntityEggInfo(i, j, k));
     }
 
     public static void registerKey(BaseMod basemod, KeyBinding keybinding, boolean flag) {
@@ -998,13 +957,13 @@ public final class ModLoader {
         registerTileEntity(class1, s, null);
     }
 
-    public static void registerTileEntity(Class class1, String s, BlockEntityRenderer tileentityspecialrenderer) {
+    public static void registerTileEntity(Class class1, String s, TileEntitySpecialRenderer tileentityspecialrenderer) {
         try {
             BlockEntityAccessor.callRegister(class1, s);
             if (tileentityspecialrenderer != null) {
-                BlockEntityRenderDispatcher tileentityrenderer = BlockEntityRenderDispatcher.INSTANCE;
+                TileEntityRenderer tileentityrenderer = TileEntityRenderer.instance;
                 ((BlockEntityRenderDispatcherAccessor) tileentityrenderer).getRenderers().put(class1, tileentityspecialrenderer);
-                tileentityspecialrenderer.setDispatcher(tileentityrenderer);
+                tileentityspecialrenderer.setTileEntityRenderer(tileentityrenderer);
             }
         } catch (IllegalArgumentException var5) {
             Log.trace(Constants.MODLOADER_LOG_CATEGORY, "ModLoader RegisterTileEntity", var5);
@@ -1013,20 +972,20 @@ public final class ModLoader {
 
     }
 
-    public static void removeBiome(Biome biomegenbase) {
-        Biome[] abiomegenbase = SetBaseBiomesLayerData.biomeArray;
-        List<Biome> list = Arrays.asList(abiomegenbase);
-        ArrayList<Biome> arraylist = new ArrayList<>(list);
+    public static void removeBiome(BiomeGenBase biomegenbase) {
+        BiomeGenBase[] abiomegenbase = SetBaseBiomesLayerData.biomeArray;
+        List<BiomeGenBase> list = Arrays.asList(abiomegenbase);
+        ArrayList<BiomeGenBase> arraylist = new ArrayList<>(list);
         arraylist.remove(biomegenbase);
 
-        SetBaseBiomesLayerData.biomeArray = arraylist.toArray(new Biome[0]);
+        SetBaseBiomesLayerData.biomeArray = arraylist.toArray(new BiomeGenBase[0]);
     }
 
-    public static void removeSpawn(Class class1, EntityCategory enumcreaturetype) {
+    public static void removeSpawn(Class class1, EnumCreatureType enumcreaturetype) {
         removeSpawn(class1, enumcreaturetype, null);
     }
 
-    public static void removeSpawn(Class class1, EntityCategory enumcreaturetype, Biome[] abiomegenbase) {
+    public static void removeSpawn(Class class1, EnumCreatureType enumcreaturetype, BiomeGenBase[] abiomegenbase) {
         if (class1 == null) {
             throw new IllegalArgumentException("entityClass cannot be null");
         } else if (enumcreaturetype == null) {
@@ -1036,24 +995,24 @@ public final class ModLoader {
                 abiomegenbase = standardBiomes;
             }
 
-            for (Biome biome : abiomegenbase) {
-                List<SpawnEntry> list = biome.getSpawnEntries(enumcreaturetype);
+            for (BiomeGenBase BiomeGenBase : abiomegenbase) {
+                List<SpawnListEntry> list = BiomeGenBase.getSpawnableList(enumcreaturetype);
                 if (list != null) {
 
-                    list.removeIf(spawnlistentry -> spawnlistentry.type == class1);
+                    list.removeIf(spawnlistentry -> spawnlistentry.entityClass == class1);
                 }
             }
 
         }
     }
 
-    public static void removeSpawn(String s, EntityCategory enumcreaturetype) {
+    public static void removeSpawn(String s, EnumCreatureType enumcreaturetype) {
         removeSpawn(s, enumcreaturetype, null);
     }
 
-    public static void removeSpawn(String s, EntityCategory enumcreaturetype, Biome[] abiomegenbase) {
+    public static void removeSpawn(String s, EnumCreatureType enumcreaturetype, BiomeGenBase[] abiomegenbase) {
         Class<?> class1 = EntityTypeAccessor.getClassMap().get(s);
-        if (class1 != null && MobEntity.class.isAssignableFrom(class1)) {
+        if (class1 != null && EntityLiving.class.isAssignableFrom(class1)) {
             removeSpawn(class1, enumcreaturetype, abiomegenbase);
         }
 
@@ -1067,14 +1026,14 @@ public final class ModLoader {
         }
     }
 
-    public static void renderInvBlock(class_535 renderblocks, Block block, int i, int j) {
+    public static void renderInvBlock(RenderBlocks renderblocks, Block block, int i, int j) {
         BaseMod basemod = blockModels.get(j);
         if (basemod != null) {
             basemod.renderInvBlock(renderblocks, block, i, j);
         }
     }
 
-    public static boolean renderWorldBlock(class_535 renderblocks, WorldView iblockaccess, int i, int j, int k, Block block, int l) {
+    public static boolean renderWorldBlock(RenderBlocks renderblocks, IBlockAccess iblockaccess, int i, int j, int k, Block block, int l) {
         BaseMod basemod = blockModels.get(l);
         return basemod != null && basemod.renderWorldBlock(renderblocks, iblockaccess, i, j, k, block, l);
     }
@@ -1098,17 +1057,17 @@ public final class ModLoader {
 
     }
 
-    public static void serverChat(ServerPacketListener netserverhandler, String s) {
+    public static void serverChat(NetServerHandler netserverhandler, String s) {
         for (BaseMod mod : modList) {
             mod.serverChat(netserverhandler, s);
         }
 
     }
 
-    public static void clientConnect(class_469 netclienthandler, class_690 packet1login) {
+    public static void clientConnect(NetClientHandler netclienthandler, Packet1Login packet1login) {
         clientHandler = netclienthandler;
         if (packetChannels.size() > 0) {
-            CustomPayloadC2SPacket packet250custompayload = new CustomPayloadC2SPacket();
+            Packet250CustomPayload packet250custompayload = new Packet250CustomPayload();
             packet250custompayload.channel = "REGISTER";
             StringBuilder stringbuilder = new StringBuilder();
             Iterator<String> iterator1 = packetChannels.keySet().iterator();
@@ -1119,8 +1078,8 @@ public final class ModLoader {
                 stringbuilder.append(iterator1.next());
             }
 
-            packet250custompayload.field_2455 = stringbuilder.toString().getBytes(StandardCharsets.UTF_8);
-            packet250custompayload.field_2454 = packet250custompayload.field_2455.length;
+            packet250custompayload.data = stringbuilder.toString().getBytes(StandardCharsets.UTF_8);
+            packet250custompayload.length = packet250custompayload.data.length;
             clientSendPacket(packet250custompayload);
         }
 
@@ -1140,14 +1099,14 @@ public final class ModLoader {
 
     public static void clientSendPacket(Packet packet) {
         if (clientHandler != null) {
-            clientHandler.sendPacket(packet);
+            clientHandler.addToSendQueue(packet);
         }
 
     }
 
-    public static void serverSendPacket(ServerPacketListener serverHandler, Packet packet) {
+    public static void serverSendPacket(NetServerHandler serverHandler, Packet packet) {
         if (serverHandler != null) {
-            serverHandler.sendPacket(packet);
+            serverHandler.sendPacketToPlayer(packet);
         }
 
     }
@@ -1449,14 +1408,14 @@ public final class ModLoader {
         modList.addAll(linkedlist);
     }
 
-    public static void takenFromCrafting(PlayerEntity entityplayer, ItemStack itemstack, Inventory iinventory) {
+    public static void takenFromCrafting(EntityPlayer entityplayer, ItemStack itemstack, IInventory iinventory) {
         for (BaseMod basemod : modList) {
             basemod.takenFromCrafting(entityplayer, itemstack, iinventory);
         }
 
     }
 
-    public static void takenFromFurnace(PlayerEntity entityplayer, ItemStack itemstack) {
+    public static void takenFromFurnace(EntityPlayer entityplayer, ItemStack itemstack) {
         for (BaseMod basemod : modList) {
             basemod.takenFromFurnace(entityplayer, itemstack);
         }
@@ -1466,7 +1425,7 @@ public final class ModLoader {
     public static void throwException(String s, Throwable throwable) {
         Minecraft minecraft = getMinecraftInstance();
         if (minecraft != null) {
-            minecraft.printCrashReport(new CrashReport(s, throwable));
+            minecraft.displayCrashReport(new CrashReport(s, throwable));
         } else {
             throw new RuntimeException(throwable);
         }
@@ -1494,11 +1453,11 @@ public final class ModLoader {
         return sb.toString();
     }
 
-    public static void addCustomAnimationLogic(String name, class_1528 tex) {
+    public static void addCustomAnimationLogic(String name, TextureStitched tex) {
         customTextures.put(name, tex);
     }
 
-    public static class_1528 getCustomAnimationLogic(String name) {
+    public static TextureStitched getCustomAnimationLogic(String name) {
         return customTextures.getOrDefault(name, null);
     }
 

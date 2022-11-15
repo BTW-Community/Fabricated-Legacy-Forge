@@ -1,21 +1,21 @@
 package fr.catcore.fabricatedmodloader.mixin.modloader.common;
 
-import net.minecraft.entity.EntityType;
+import net.minecraft.src.EntityList;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
 import java.util.Map;
 
-@Mixin(EntityType.class)
+@Mixin(EntityList.class)
 public interface EntityTypeAccessor {
 
-    @Accessor("NAME_CLASS_MAP")
+    @Accessor("stringToClassMapping")
     static Map<String, Class<?>> getClassMap() {
         return null;
     }
 
-    @Invoker("registerEntity")
+    @Invoker("addMapping")
     static void callRegister(Class clazz, String name, int id) {
         throw new AssertionError("@Invoker dummy body called");
     }

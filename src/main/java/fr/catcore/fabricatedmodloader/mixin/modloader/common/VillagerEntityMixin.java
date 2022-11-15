@@ -2,11 +2,7 @@ package fr.catcore.fabricatedmodloader.mixin.modloader.common;
 
 import modloader.ModLoader;
 import modloader.TradeEntry;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.passive.VillagerEntity;
-import net.minecraft.util.Pair;
-import net.minecraft.village.TraderOfferList;
-import net.minecraft.world.World;
+import net.minecraft.src.*;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -19,48 +15,41 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 
-@Mixin(VillagerEntity.class)
+@Mixin(EntityVillager.class)
 public abstract class VillagerEntityMixin extends Entity {
 
-    @Shadow
-    public abstract int profession();
+    @Shadow public abstract int getProfession();
 
     @Shadow
-    private static void method_3107(TraderOfferList traderOfferList, int i, Random random, float f) {
+    protected static void addMerchantItem(MerchantRecipeList merchantRecipeList, int i, Random random, float f) {
     }
 
     @Shadow
-    private static void method_3110(TraderOfferList traderOfferList, int i, Random random, float f) {
+    protected static void addBlacksmithItem(MerchantRecipeList merchantRecipeList, int i, Random random, float f) {
     }
 
-    @Shadow
-    @Final
-    private static Map field_3947;
-
-    @Shadow
-    @Final
-    private static Map field_3946;
+    @Shadow @Final private static Map villagerStockList;
 
     public VillagerEntityMixin(World world) {
         super(world);
     }
 
-    @Inject(method = "method_3111",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/village/TraderOfferList;isEmpty()Z", shift = At.Shift.BEFORE),
+    @Inject(method = "addDefaultEquipmentAndRecipies",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/src/MerchantRecipeList;isEmpty()Z", shift = At.Shift.BEFORE),
             locals = LocalCapture.CAPTURE_FAILEXCEPTION
     )
-    private void modLoaderAddTrades(int par1, CallbackInfo ci, TraderOfferList var2) {
+    private void modLoaderAddTrades(int par1, CallbackInfo ci, MerchantRecipeList var2) {
         this.addModTrades(var2);
     }
 
-    private void addModTrades(TraderOfferList merchantrecipelist) {
-        List<TradeEntry> list = ModLoader.getTrades(this.profession());
+    private void addModTrades(MerchantRecipeList merchantrecipelist) {
+        List<TradeEntry> list = ModLoader.getTrades(this.getProfession());
         if (list != null) {
             for (TradeEntry entry : list) {
                 if (entry.buying) {
-                    method_3107(merchantrecipelist, entry.id, this.random, entry.chance);
+                    addMerchantItem(merchantrecipelist, entry.id, this.rand, entry.chance);
                 } else {
-                    method_3110(merchantrecipelist, entry.id, this.random, entry.chance);
+                    addBlacksmithItem(merchantrecipelist, entry.id, this.rand, entry.chance);
                 }
             }
 
@@ -68,16 +57,16 @@ public abstract class VillagerEntityMixin extends Entity {
     }
 
     @Inject(method = "<clinit>", at = @At("RETURN"))
-    private static void modLoaderAddTrades(CallbackInfo ci) {
+    private static void staticInit(CallbackInfo ci) {
         List<TradeEntry> list = ModLoader.getTrades(-1);
         if (list != null) {
             for (TradeEntry entry : list) {
                 if (entry.buying) {
                     if (entry.min > 0 && entry.max > 0) {
-                        field_3946.put(entry.id, new Pair(entry.min, entry.max));
+                        villagerStockList.put(entry.id, new Tuple(entry.min, entry.max));
                     }
                 } else if (entry.min > 0 && entry.max > 0) {
-                    field_3947.put(entry.id, new Pair(entry.min, entry.max));
+                    villagerStockList.put(entry.id, new Tuple(entry.min, entry.max));
                 }
             }
         }

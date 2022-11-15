@@ -2,11 +2,12 @@ package fr.catcore.fabricatedmodloader.utils;
 
 import fr.catcore.fabricatedmodloader.remapping.RemapUtil;
 import net.fabricmc.loader.api.FabricLoader;
-import net.fabricmc.loader.impl.launch.FabricLauncherBase;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.util.*;
 import java.util.zip.ZipEntry;
@@ -147,13 +148,20 @@ public class MLModDiscoverer {
         }
 
         FakeModManager.getMods().forEach(modEntry -> {
-            if (modEntry.original != null) FabricLauncherBase.getLauncher().addToClassPath(modEntry.file.toPath());
+            if (modEntry.original != null) {
+                try {
+                    FabricLauncherBase.getLauncher().propose(modEntry.file.toURL());
+                } catch (MalformedURLException e) {
+                    throw new RuntimeException(e);
+                }
+            }
         });
     }
 
     static {
-//        EXCLUDED.put("ReiMinimap", new BArrayList<>());
-//        EXCLUDED.get("ReiMinimap")
-//                .put("aow.class");
+        EXCLUDED.put("ReiMinimap", new BArrayList<>());
+        EXCLUDED.put("TooManyItems", new BArrayList<>());
+        EXCLUDED.get("ReiMinimap").put("aww.class");
+        EXCLUDED.get("TooManyItems").put("ayl.class");
     }
 }

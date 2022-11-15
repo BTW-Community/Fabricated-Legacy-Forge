@@ -1,17 +1,17 @@
 package fr.catcore.fabricatedmodloader.mixin.modloader.common;
 
-import net.minecraft.item.ItemStack;
-import net.minecraft.recipe.RecipeDispatcher;
-import net.minecraft.recipe.ShapedRecipeType;
+import net.minecraft.src.CraftingManager;
+import net.minecraft.src.ItemStack;
+import net.minecraft.src.ShapedRecipes;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
-@Mixin(RecipeDispatcher.class)
+@Mixin(CraftingManager.class)
 public interface RecipeDispatcherAccessor {
 
-    @Invoker("registerShapedRecipe")
-    ShapedRecipeType registerShapedRecipe_invoker(ItemStack itemStack, Object... objects);
+    @Invoker("addRecipe")
+    ShapedRecipes registerShapedRecipe_invoker(ItemStack itemStack, Object... objects);
 
-    @Invoker("registerShapelessRecipe")
+    @Invoker("addShapelessRecipe")
     void registerShapelessRecipe_invoker(ItemStack result, Object... args);
 }

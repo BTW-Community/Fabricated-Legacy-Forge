@@ -7,7 +7,9 @@
   ],
   "client": [
     "invtweaks.FixInvTweaksLocalization",
-    "invtweaks.FixInvTweaksReflection"
+    "invtweaks.FixInvTweaksReflection",
+    "toomanyitems.GuiContainerTMICompatMixin",
+    "toomanyitems.TMIPrivateFieldsMixin"
   ],
   "injectors": {
     "defaultRequire": 1

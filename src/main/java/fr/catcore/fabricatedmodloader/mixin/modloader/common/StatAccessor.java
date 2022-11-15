@@ -1,12 +1,12 @@
 package fr.catcore.fabricatedmodloader.mixin.modloader.common;
 
-import net.minecraft.stat.Stat;
+import net.minecraft.src.StatBase;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
 
-@Mixin(Stat.class)
+@Mixin(StatBase.class)
 public interface StatAccessor {
 
-    @Accessor("stringId")
+    @Accessor("statName")
     void setStringId(String stringId);
 }

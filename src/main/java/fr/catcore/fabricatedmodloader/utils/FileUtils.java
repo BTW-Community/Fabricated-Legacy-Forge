@@ -1,6 +1,6 @@
 package fr.catcore.fabricatedmodloader.utils;
 
-import net.fabricmc.loader.impl.launch.FabricLauncherBase;
+import net.fabricmc.loader.launch.common.FabricLauncherBase;
 
 import java.io.*;
 import java.util.ArrayList;

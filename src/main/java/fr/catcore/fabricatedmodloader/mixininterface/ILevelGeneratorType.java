@@ -1,14 +1,15 @@
 package fr.catcore.fabricatedmodloader.mixininterface;
 
-import net.minecraft.world.LayeredBiomeSource;
-import net.minecraft.world.World;
-import net.minecraft.world.chunk.ChunkProvider;
+import net.minecraft.src.IChunkProvider;
+import net.minecraft.src.World;
+import net.minecraft.src.WorldChunkManager;
 
+@Deprecated
 public interface ILevelGeneratorType {
 
-    LayeredBiomeSource getChunkManager(World world);
+    WorldChunkManager getChunkManager(World world);
 
-    ChunkProvider getChunkGenerator(World world, String params);
+    IChunkProvider getChunkGenerator(World world, String params);
 
     int getSeaLevel(World world);
 

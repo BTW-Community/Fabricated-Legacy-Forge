@@ -1,11 +1,9 @@
 package fr.catcore.fabricatedmodloader.mixin.modloader.client;
 
+import net.minecraft.src.*;
 import com.google.common.collect.Lists;
 import fr.catcore.fabricatedmodloader.utils.class_535Data;
 import modloader.ModLoader;
-import net.minecraft.block.Block;
-import net.minecraft.client.class_535;
-import net.minecraft.world.WorldView;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
@@ -15,14 +13,14 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.List;
 
-@Mixin(class_535.class)
+@Mixin(RenderBlocks.class)
 public abstract class class_535Mixin {
 
     @Shadow
-    public WorldView field_2017;
+    public IBlockAccess blockAccess;
 
     @Shadow
-    public static boolean field_2047;
+    public static boolean fancyGrass;
     private static final List<Integer> RENDER_BLOCKS = Lists.newArrayList(
             -1, 0, 4, 31, 1, 2, 20, 11, 39,
             5, 13, 9, 19, 23, 6, 3, 8, 7, 10, 27,
@@ -30,11 +28,11 @@ public abstract class class_535Mixin {
             18, 21, 24, 33, 35, 25, 26, 28, 34, 38
     );
 
-    @Inject(method = "method_1458", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "renderBlockByRenderType", at = @At("RETURN"), cancellable = true)
     private void modLoaderRenderWorldBlock(Block block, int i, int j, int k, CallbackInfoReturnable<Boolean> cir) {
-        int type = block.getBlockType();
+        int type = block.getRenderType();
         if (!cir.getReturnValue() && !RENDER_BLOCKS.contains(type)) {
-            cir.setReturnValue(ModLoader.renderWorldBlock((class_535) (Object) this, this.field_2017, i, j, k, block, type));
+            cir.setReturnValue(ModLoader.renderWorldBlock((RenderBlocks) (Object) this, this.blockAccess, i, j, k, block, type));
         }
     }
 
@@ -42,21 +40,21 @@ public abstract class class_535Mixin {
             1, 19, 23, 13, 22, 6, 2, 10, 27, 11, 21, 32, 35, 34, 38
     );
 
-    @Inject(method = "method_1447",
-            at = @At(value = "INVOKE", target = "Lnet/minecraft/block/Block;getBlockType()I", ordinal = 0),
-            cancellable = true
+    @Inject(method = "renderBlockAsItemVanilla",
+            at = @At(value = "INVOKE", target = "Lnet/minecraft/src/Block;getRenderType()I", ordinal = 0, remap = true),
+            cancellable = true, remap = false
     )
     private void modLoaderRenderInvBlock(Block block, int i, float f, CallbackInfo ci) {
-        int var6 = block.getBlockType();
+        int var6 = block.getRenderType();
         if (var6 != 0 && var6 != 31 && var6 != 39 && var6 != 16 && var6 != 26) {
             if (!RENDER_BLOCKS_INV.contains(var6)) {
-                ModLoader.renderInvBlock((class_535) (Object) this, block, i, var6);
+                ModLoader.renderInvBlock((RenderBlocks) (Object) this, block, i, var6);
                 ci.cancel();
             }
         }
     }
 
-    @Inject(method = "method_1455", at = @At("RETURN"), cancellable = true)
+    @Inject(method = "doesRenderIDRenderItemIn3D", at = @At("RETURN"), cancellable = true, remap = false)
     private static void modLoaderRenderBlockIsItemFull3D(int i, CallbackInfoReturnable<Boolean> cir) {
         if (!cir.getReturnValueZ()) {
             cir.setReturnValue(ModLoader.renderBlockIsItemFull3D(i));
@@ -65,6 +63,6 @@ public abstract class class_535Mixin {
 
     @Inject(method = "<clinit>", at = @At("RETURN"))
     private static void modLoaderCfgGrassFix(CallbackInfo ci) {
-        field_2047 = class_535Data.cfgGrassFix;
+        fancyGrass = class_535Data.cfgGrassFix;
     }
 }

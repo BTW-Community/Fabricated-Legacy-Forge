@@ -1,22 +1,7 @@
 package modloader;
 
-import net.minecraft.block.Block;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.class_469;
-import net.minecraft.client.class_535;
-import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.gui.screen.ingame.HandledScreen;
-import net.minecraft.client.options.KeyBinding;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.player.PlayerEntity;
-import net.minecraft.entity.player.class_481;
-import net.minecraft.inventory.Inventory;
-import net.minecraft.item.ItemStack;
-import net.minecraft.network.packet.c2s.play.CustomPayloadC2SPacket;
-import net.minecraft.network.packet.s2c.play.EntitySpawn_S2CPacket;
-import net.minecraft.server.ServerPacketListener;
-import net.minecraft.world.World;
-import net.minecraft.world.WorldView;
+import net.minecraft.src.*;
 
 import java.util.Map;
 import java.util.Random;
@@ -58,56 +43,56 @@ public abstract class BaseMod {
     public void modsLoaded() {
     }
 
-    public void onItemPickup(PlayerEntity entityplayer, ItemStack itemstack) {
+    public void onItemPickup(EntityPlayer entityplayer, ItemStack itemstack) {
     }
 
     public boolean onTickInGame(float f, Minecraft minecraft) {
         return false;
     }
 
-    public boolean onTickInGUI(float f, Minecraft minecraft, Screen guiscreen) {
+    public boolean onTickInGUI(float f, Minecraft minecraft, GuiScreen guiscreen) {
         return false;
     }
 
     public void clientChat(String s) {
     }
 
-    public void serverChat(ServerPacketListener netserverhandler, String s) {
+    public void serverChat(NetServerHandler netserverhandler, String s) {
     }
 
-    public void clientCustomPayload(class_469 clientHandler, CustomPayloadC2SPacket packet250custompayload) {
+    public void clientCustomPayload(NetClientHandler clientHandler, Packet250CustomPayload packet250custompayload) {
     }
 
-    public void serverCustomPayload(ServerPacketListener serverHandler, CustomPayloadC2SPacket packet250custompayload) {
+    public void serverCustomPayload(NetServerHandler serverHandler, Packet250CustomPayload packet250custompayload) {
     }
 
     public void registerAnimation(Minecraft minecraft) {
     }
 
-    public void renderInvBlock(class_535 renderblocks, Block block, int i, int j) {
+    public void renderInvBlock(RenderBlocks renderblocks, Block block, int i, int j) {
     }
 
-    public boolean renderWorldBlock(class_535 renderblocks, WorldView iblockaccess, int i, int j, int k, Block block, int l) {
+    public boolean renderWorldBlock(RenderBlocks renderblocks, IBlockAccess iblockaccess, int i, int j, int k, Block block, int l) {
         return false;
     }
 
-    public void clientConnect(class_469 netclienthandler) {
+    public void clientConnect(NetClientHandler netclienthandler) {
     }
 
-    public void clientDisconnect(class_469 clientHandler) {
+    public void clientDisconnect(NetClientHandler clientHandler) {
     }
 
-    public void takenFromCrafting(PlayerEntity entityplayer, ItemStack itemstack, Inventory iinventory) {
+    public void takenFromCrafting(EntityPlayer entityplayer, ItemStack itemstack, IInventory iinventory) {
     }
 
-    public void takenFromFurnace(PlayerEntity entityplayer, ItemStack itemstack) {
+    public void takenFromFurnace(EntityPlayer entityplayer, ItemStack itemstack) {
     }
 
     public String toString() {
         return this.getName() + ' ' + this.getVersion();
     }
 
-    public HandledScreen getContainerGUI(class_481 player, int inventoryType, int x, int y, int z) {
+    public GuiContainer getContainerGUI(EntityClientPlayerMP player, int inventoryType, int x, int y, int z) {
         return null;
     }
 
@@ -115,7 +100,7 @@ public abstract class BaseMod {
         return null;
     }
 
-    public EntitySpawn_S2CPacket getSpawnPacket(Entity entity, int id) {
+    public Packet23VehicleSpawn getSpawnPacket(Entity entity, int id) {
         return null;
     }
 }

@@ -4,10 +4,11 @@ import com.google.common.collect.Maps;
 import net.fabricmc.api.EnvType;
 import net.fabricmc.loader.api.Version;
 import net.fabricmc.loader.api.metadata.*;
-import net.fabricmc.loader.impl.metadata.EntrypointMetadata;
-import net.fabricmc.loader.impl.metadata.LoaderModMetadata;
-import net.fabricmc.loader.impl.metadata.NestedJarEntry;
-import net.fabricmc.loader.impl.util.version.StringVersion;
+import net.fabricmc.loader.metadata.EntrypointMetadata;
+import net.fabricmc.loader.metadata.LoaderModMetadata;
+import net.fabricmc.loader.metadata.NestedJarEntry;
+import net.fabricmc.loader.util.version.StringVersion;
+import org.apache.logging.log4j.Logger;
 
 import java.util.*;
 
@@ -47,9 +48,30 @@ public class MLModMetadata implements LoaderModMetadata {
     }
 
     @Override
-    public Collection<ModDependency> getDependencies() {
-        return Collections.emptyList();
+    public Collection<ModDependency> getDepends() {
+        return null;
     }
+
+    @Override
+    public Collection<ModDependency> getRecommends() {
+        return null;
+    }
+
+    @Override
+    public Collection<ModDependency> getSuggests() {
+        return null;
+    }
+
+    @Override
+    public Collection<ModDependency> getConflicts() {
+        return null;
+    }
+
+    @Override
+    public Collection<ModDependency> getBreaks() {
+        return null;
+    }
+
 
     @Override
     public String getName() {
@@ -101,10 +123,6 @@ public class MLModMetadata implements LoaderModMetadata {
         return Maps.newHashMap();
     }
 
-    @Override
-    public boolean containsCustomElement(String key) {
-        return false;
-    }
 
     @Override
     public int getSchemaVersion() {
@@ -137,11 +155,6 @@ public class MLModMetadata implements LoaderModMetadata {
     }
 
     @Override
-    public Collection<String> getOldInitializers() {
-        return Collections.emptyList();
-    }
-
-    @Override
     public List<EntrypointMetadata> getEntrypoints(String type) {
         return Collections.emptyList();
     }
@@ -152,17 +165,9 @@ public class MLModMetadata implements LoaderModMetadata {
     }
 
     @Override
-    public void emitFormatWarnings() {
+    public void emitFormatWarnings(Logger logger) {
 
     }
 
-    @Override
-    public void setVersion(Version version) {
 
-    }
-
-    @Override
-    public void setDependencies(Collection<ModDependency> dependencies) {
-
-    }
 }
